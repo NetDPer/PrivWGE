@@ -16,6 +16,10 @@
 
 - run PrivWGE.py in unsupervisedEmbed
 
-  ### Run PrivGNN
+### Run PrivGNN
+
+Note that PrivGNN uses cross-entropy as the loss function and achieves unsupervised learning through random edge sampling. Additionally, PrivGNN incorporates the perturbation technique from the classical GAP method to inject Gaussian noise into the aggregation process during each iteration. For PrivGNN, since it does not generate a node embedding matrix that matches the number of nodes in the graph during optimization, we predefine a matrix of the same size as the node set and incrementally update its entries in each iteration.
+
+- run unsupervised.py in PrivGNN
 
   
