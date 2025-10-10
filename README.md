@@ -1,4 +1,4 @@
-### Requirements
+### Requirements for PrivWGE
 
 - python 3.6.5
 
