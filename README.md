@@ -8,10 +8,14 @@
 
 - networkx 2.2
 
-### Test run
+### Run PrivWGE
 
 - MSE metric for link weight prediction is in ComputeMSE.py
 
 - PCC (Pearson correlation coefficient) metric for weighted structural equivalence is in functions.py 
 
 - run PrivWGE.py in unsupervisedEmbed
+
+  ### Run PrivGNN
+
+  
