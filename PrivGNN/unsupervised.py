@@ -245,10 +245,8 @@ def run_dataset(oriGraph_filename, train_filename, test_task):
     # training
     times = []
 
-    # privacy accoutant
-    acct = rdp_acct.anaRDPacct()
     func = lambda x: rdp_bank.RDP_gaussian({'sigma': args.sigma}, x)
-
+    
     step = 0
     mean = 0.0  # Mean of the normal distribution
     stddev = 1.0  # Standard deviation of the normal distribution
@@ -257,6 +255,10 @@ def run_dataset(oriGraph_filename, train_filename, test_task):
 
     for minibatch in islice(minibatch_generator, 0, TRAINING_STEPS):
         start_time = time.time()
+        
+        # privacy accoutant
+        acct = rdp_acct.anaRDPacct()
+    
         with tf.GradientTape() as tape:
             batch_embeddings = graphsage(minibatch)
             loss = graphsage.losses[0]
