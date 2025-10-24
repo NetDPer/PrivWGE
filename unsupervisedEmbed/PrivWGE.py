@@ -204,17 +204,18 @@ class trainModel:
         print(args)
         print('batches\tloss\tsampling time\ttraining_time\tdatetime')
 
+        func = lambda x: rdp_bank.RDP_gaussian({'sigma': args.sigma}, x)
+
         for indep_run_time in range(args.indep_run_times):
             found = False
 
             with tf.compat.v1.Session() as sess:
                 sess.run(tf.compat.v1.global_variables_initializer())
 
-                # privacy accoutant
-                acct = rdp_acct.anaRDPacct()
-                func = lambda x: rdp_bank.RDP_gaussian({'sigma': args.sigma}, x)
-
                 for each_epoch in range(args.n_epoch):
+                    # privacy accoutant
+                    acct = rdp_acct.anaRDPacct()
+                
                     u_i, u_j, label, w_ij = self.data_loader.prepare_data()
 
                     feed_dict = {self.model.u_i: u_i, self.model.u_j: u_j, self.model.label: label,
