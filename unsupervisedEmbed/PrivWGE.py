@@ -215,6 +215,10 @@ class trainModel:
                 for each_epoch in range(args.n_epoch):
                     # privacy accoutant
                     acct = rdp_acct.anaRDPacct()
+                    '''
+                    The acct = rdp_acct.anaRDPacct() is called in every iteration of the loop, 
+                    so it will initialize a new instance of anaRDPacct() every time the loop iterates.
+                    '''
                 
                     u_i, u_j, label, w_ij = self.data_loader.prepare_data()
 
