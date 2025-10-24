@@ -14,6 +14,8 @@ from autodp import rdp_acct, rdp_bank
 import argparse
 import functions
 
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--batch_size', default=512)
 parser.add_argument('--RDP', default=True)
