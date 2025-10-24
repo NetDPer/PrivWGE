@@ -37,11 +37,24 @@ NEG_SIZE = 20
 TRAINING_STEPS = 50
 LEARNING_RATE = 0.01
 
+# def generate_training_minibatch(trainGraph, adj_mat_dict, batch_size, sample_sizes, neg_size):
+    # edges = np.array([(k, v) for k in adj_mat_dict for v in adj_mat_dict[k]])
+    # nodes = np.array(list(adj_mat_dict.keys()))
+    # while True:
+    #     mini_batch_edges = edges[np.random.randint(edges.shape[0], size = batch_size), :]
+    #     batch = build_batch(trainGraph, mini_batch_edges, nodes, adj_mat_dict, sample_sizes, neg_size)
+    #     yield batch
+
 def generate_training_minibatch(trainGraph, adj_mat_dict, batch_size, sample_sizes, neg_size):
     edges = np.array([(k, v) for k in adj_mat_dict for v in adj_mat_dict[k]])
     nodes = np.array(list(adj_mat_dict.keys()))
+
     while True:
-        mini_batch_edges = edges[np.random.randint(edges.shape[0], size = batch_size), :]
+        # Poisson-based sampling probability control for mini-batch generation
+        q = batch_size / edges.shape[0]
+        mask = np.random.rand(edges.shape[0]) < q
+        selected_indices = np.where(mask)[0]
+        mini_batch_edges = edges[selected_indices, :]
         batch = build_batch(trainGraph, mini_batch_edges, nodes, adj_mat_dict, sample_sizes, neg_size)
         yield batch
 
