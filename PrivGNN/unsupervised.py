@@ -283,7 +283,7 @@ def run_dataset(oriGraph_filename, train_filename, test_task):
             acct.compose_poisson_subsampled_mechanisms(func, sampling_prob, step)
             eps_now = acct.get_eps(args.delta)
 
-            if np.isclose(args.epsilon, eps_now, atol=args.eps_tolerance):
+            if args.epsilon - eps_now < args.eps_tolerance:
                 print('jump out')
                 break
 
