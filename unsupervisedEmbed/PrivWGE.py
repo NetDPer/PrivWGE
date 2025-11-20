@@ -130,26 +130,32 @@ class prepare_data:
         self.edge_distribution /= np.sum(self.edge_distribution)
         self.edge_sampling = AliasSampling(prob=self.edge_distribution)
 
-        # self.node_negative_distribution = np.power(
-        #     np.array([self.g.degree(node, weight='weight') for node, _ in self.nodes_raw], dtype=np.float64), 0.75)
-
         self.node_negative_distribution = np.array([1/self.num_of_nodes for node, _ in self.nodes_raw], dtype=np.float64)
-
         self.node_negative_distribution /= np.sum(self.node_negative_distribution)
         self.node_sampling = AliasSampling(prob=self.node_negative_distribution)
 
         self.edges = [(u, v) for u, v, _ in self.edges_raw]
 
+        # Pre-generate K negative samples for each node to ensure consistency
+        self.negative_samples_dict = {}
+        for node, _ in self.nodes_raw:
+            negative_nodes = []
+            i = 0
+            while len(negative_nodes) < args.K:
+                if args.node_sampling == 'numpy':
+                    candidate = np.random.choice(self.num_of_nodes, p=self.node_negative_distribution)
+                # Ensure candidate is not the node itself, not connected by an edge, and not already selected
+                if not self.g.has_edge(node, candidate) and candidate != node and candidate not in negative_nodes:
+                    negative_nodes.append(candidate)
+                i += 1
+                if i > 100 * args.K:  # Prevent infinite loop
+                    break
+            self.negative_samples_dict[node] = negative_nodes
+
     def prepare_data(self):
         global edge_batch_index, negative_node
 
-        if args.edge_sampling == 'numpy':
-            edge_batch_index = np.random.choice(self.num_of_edges, size=args.batch_size, p=self.edge_distribution)
-        elif args.edge_sampling == 'atlas':
-            edge_batch_index = self.edge_sampling.sampling(args.batch_size)
-        elif args.edge_sampling == 'uniform':
-            edge_batch_index = np.random.randint(0, self.num_of_edges, size=args.batch_size)
-        elif args.edge_sampling == 'poisson':
+        if args.edge_sampling == 'poisson':
             prob = args.batch_size / self.num_of_edges
             edge_batch_index = poisson_subsample_indices(self.num_of_edges, q=prob)
 
@@ -169,24 +175,85 @@ class prepare_data:
             label.append(1)
             w_ij.append(self.g.get_edge_data(edge[0], edge[1])['weight'])
 
-            for i in range(args.K):
-                while True:
-                    if args.node_sampling == 'numpy':
-                        negative_node = np.random.choice(self.num_of_nodes, p=self.node_negative_distribution)
-                    elif args.node_sampling == 'atlas':
-                        negative_node = self.node_sampling.sampling()
-                    elif args.node_sampling == 'uniform':
-                        negative_node = np.random.randint(0, self.num_of_nodes)
-                    # if not self.g.has_edge(self.node_index_reversed[negative_node], self.node_index_reversed[edge[0]]):
-                    if not self.g.has_edge(negative_node, edge[0]):
-                        break
-
+            # Use pre-generated negative samples for consistent results
+            negative_nodes = self.negative_samples_dict[edge[0]]
+            for negative_node in negative_nodes:
                 u_i.append(edge[0])
                 u_j.append(negative_node)
                 label.append(-1)
                 w_ij.append(self.g.get_edge_data(edge[0], edge[1])['weight'])
 
         return u_i, u_j, label, w_ij
+        
+# class prepare_data:
+#     def __init__(self, graph_file=None):
+#         self.g = graph_file
+#         self.num_of_nodes = len(self.g.nodes())
+#         self.num_of_edges = len(self.g.edges())
+#         self.edges_raw = self.g.edges(data=True)
+#         self.nodes_raw = self.g.nodes(data=True)
+
+#         self.edge_distribution = np.array([attr['weight'] for _, _, attr in self.edges_raw], dtype=np.float64)
+#         self.edge_distribution /= np.sum(self.edge_distribution)
+#         self.edge_sampling = AliasSampling(prob=self.edge_distribution)
+
+#         # self.node_negative_distribution = np.power(
+#         #     np.array([self.g.degree(node, weight='weight') for node, _ in self.nodes_raw], dtype=np.float64), 0.75)
+
+#         self.node_negative_distribution = np.array([1/self.num_of_nodes for node, _ in self.nodes_raw], dtype=np.float64)
+
+#         self.node_negative_distribution /= np.sum(self.node_negative_distribution)
+#         self.node_sampling = AliasSampling(prob=self.node_negative_distribution)
+
+#         self.edges = [(u, v) for u, v, _ in self.edges_raw]
+
+#     def prepare_data(self):
+#         global edge_batch_index, negative_node
+
+#         if args.edge_sampling == 'numpy':
+#             edge_batch_index = np.random.choice(self.num_of_edges, size=args.batch_size, p=self.edge_distribution)
+#         elif args.edge_sampling == 'atlas':
+#             edge_batch_index = self.edge_sampling.sampling(args.batch_size)
+#         elif args.edge_sampling == 'uniform':
+#             edge_batch_index = np.random.randint(0, self.num_of_edges, size=args.batch_size)
+#         elif args.edge_sampling == 'poisson':
+#             prob = args.batch_size / self.num_of_edges
+#             edge_batch_index = poisson_subsample_indices(self.num_of_edges, q=prob)
+
+#         u_i = []
+#         u_j = []
+#         label = []
+#         w_ij = []
+
+#         for edge_index in edge_batch_index:
+#             edge = self.edges[edge_index]
+#             if self.g.__class__ == nx.Graph:
+#                 if np.random.rand() > 0.5:
+#                     edge = (edge[1], edge[0])
+
+#             u_i.append(edge[0])
+#             u_j.append(edge[1])
+#             label.append(1)
+#             w_ij.append(self.g.get_edge_data(edge[0], edge[1])['weight'])
+
+#             for i in range(args.K):
+#                 while True:
+#                     if args.node_sampling == 'numpy':
+#                         negative_node = np.random.choice(self.num_of_nodes, p=self.node_negative_distribution)
+#                     elif args.node_sampling == 'atlas':
+#                         negative_node = self.node_sampling.sampling()
+#                     elif args.node_sampling == 'uniform':
+#                         negative_node = np.random.randint(0, self.num_of_nodes)
+#                     # if not self.g.has_edge(self.node_index_reversed[negative_node], self.node_index_reversed[edge[0]]):
+#                     if not self.g.has_edge(negative_node, edge[0]):
+#                         break
+
+#                 u_i.append(edge[0])
+#                 u_j.append(negative_node)
+#                 label.append(-1)
+#                 w_ij.append(self.g.get_edge_data(edge[0], edge[1])['weight'])
+
+#         return u_i, u_j, label, w_ij
 
 class trainModel:
     def __init__(self, inf_display, graph, original_graph=None, test_pos=None, test_neg=None):
